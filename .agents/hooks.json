@@ -1,0 +1,7 @@
+{
+  "PreToolUse": {
+    "command": "run_command",
+    "handler": "python3 .agents/scripts/validate_tool_call.py",
+    "timeout_seconds": 10
+  }
+}

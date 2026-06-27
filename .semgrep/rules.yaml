@@ -1,0 +1,7 @@
+rules:
+  - id: detect-gcp-api-key
+    pattern-regex: "AIzaSy[A-Za-z0-9_\\-]*"
+    message: "Hardcoded GCP API Key detected! Do not commit secrets."
+    languages:
+      - generic
+    severity: ERROR
