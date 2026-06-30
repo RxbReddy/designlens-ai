@@ -371,6 +371,7 @@ Return a structured JSON object with exactly these keys:
 - thermal_system
 - fasteners_mechanisms
 - uncertain
+Each key must map to a JSON array of objects: {"component_name": "string", "rationale": "string", "confidence": "high | medium | low"}.
 Save your output into the session state key 'subsystem_output'.""",
         output_key="subsystem_output"
     )
