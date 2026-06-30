@@ -133,6 +133,8 @@ Return valid JSON only using this compact schema:
       "confidence": "high | medium | low"
     }
   ],
+  "materials": ["string"],
+  "observations": ["string"],
   "uncertainties": [
     {
       "item": "string",
