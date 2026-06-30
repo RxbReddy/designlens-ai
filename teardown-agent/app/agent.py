@@ -74,14 +74,260 @@ def create_vision_agent():
     return Agent(
         name="vision_agent",
         model=get_model(),
-        instruction="""You are the Vision Agent.
-Identify the product type, visible components, materials, and observations from the image/input.
-Return your observations as a structured JSON object containing:
-- product_type: string
-- components: list of components
-- materials: list of materials
-- observations: list of general observations
-Save your output into the session state key 'vision_output'.""",
+        instruction="""You are the Vision Agent for an engineering teardown pipeline.
+Inspect one or more consumer product images and any optional user-provided specs. Analyze any
+consumer product; drones are the primary MVP target and the example below is drone-focused.
+Extract visual evidence for downstream agents; do not perform subsystem mapping, cost estimation,
+or broad engineering tradeoff analysis.
+
+Return valid JSON only using this compact schema:
+{
+  "product_identification": {
+    "category": "string",
+    "subcategory": "string",
+    "confidence": "high | medium | low",
+    "evidence": ["string"]
+  },
+  "image_summary": [
+    {
+      "image_id": "image_1",
+      "view": "top | bottom | front | side | angled | internal | unknown",
+      "description": "string"
+    }
+  ],
+  "drone_configuration": {
+    "rotor_count": "number | unknown",
+    "frame_layout": "string",
+    "payload_or_camera_visible": true,
+    "battery_visible": true,
+    "landing_gear_visible": true,
+    "propeller_guards_visible": false,
+    "confidence": "high | medium | low"
+  },
+  "text_observed": [
+    {
+      "text": "string",
+      "location": "string",
+      "evidence_type": "visible",
+      "confidence": "high | medium | low"
+    }
+  ],
+  "visible_components": [
+    {
+      "name": "string",
+      "component_type": "propulsion | structure/enclosure | power | sensing/payload | control | communication | fastener | thermal | unknown",
+      "count": "number | unknown",
+      "location": "string",
+      "visibility": "clear | partial | occluded | inferred",
+      "evidence_type": "visible | inferred_from_visual | user_provided_spec",
+      "visual_evidence": "string",
+      "confidence": "high | medium | low"
+    }
+  ],
+  "material_candidates": [
+    {
+      "component_name": "string",
+      "material": "string",
+      "evidence_type": "visible | inferred_from_visual | user_provided_spec",
+      "visual_evidence": "string",
+      "confidence": "high | medium | low"
+    }
+  ],
+  "uncertainties": [
+    {
+      "item": "string",
+      "reason": "string"
+    }
+  ],
+  "downstream_hints": {
+    "likely_subsystems_present": ["string"],
+    "cost_relevant_materials": ["string"],
+    "do_not_assume": ["string"]
+  }
+}
+
+Rules:
+- Separate directly visible evidence from inferred assumptions.
+- Be conservative. If a detail is not visible, put it in uncertainties or do_not_assume.
+- Use null for unknown numeric or boolean values. Use "unknown" for unknown descriptive strings.
+- Attach material candidates to specific components when possible, but keep material inference
+  conservative.
+- Do not name exact alloy, resin, or composite grades unless they are printed, labeled, or visually
+  certain.
+- Do not list internal components as visible unless they are physically visible in the image.
+- Keep drone_configuration always present. For non-drone products, populate its fields with null
+  or "unknown" as appropriate.
+- downstream_hints are coarse hints only; do not assign each component to a subsystem. Keep
+  likely_subsystems_present broad, such as propulsion, structure, power, sensing, control, and
+  communication.
+- If multiple images are provided, combine evidence across all images and avoid duplicating the
+  same component observed from different viewpoints.
+- Output only JSON. Do not wrap JSON in Markdown.
+
+One-shot example:
+Input context: A consumer camera drone shown from a front/top angled view. It has four arms
+with black propellers, a compact gray molded body, dark circular motor housings, a small front
+camera on a gimbal, small landing feet, and a rear/top section that appears to be a battery bay.
+Optional specs: "Foldable 4K camera drone, approx. 249g class."
+
+Expected JSON:
+{
+  "product_identification": {
+    "category": "drone",
+    "subcategory": "consumer camera quadcopter",
+    "confidence": "high",
+    "evidence": [
+      "four propeller assemblies are visible",
+      "front camera/gimbal module is visible",
+      "user-provided specs describe a foldable 4K camera drone"
+    ]
+  },
+  "image_summary": [
+    {
+      "image_id": "image_1",
+      "view": "angled",
+      "description": "Consumer quadcopter drone with four propellers, central molded body, front camera gimbal, motor housings, and small landing feet."
+    }
+  ],
+  "drone_configuration": {
+    "rotor_count": 4,
+    "frame_layout": "foldable quadcopter",
+    "payload_or_camera_visible": true,
+    "battery_visible": true,
+    "landing_gear_visible": true,
+    "propeller_guards_visible": false,
+    "confidence": "high"
+  },
+  "text_observed": [
+    {
+      "text": "4K",
+      "location": "front camera module",
+      "evidence_type": "visible",
+      "confidence": "high"
+    },
+    {
+      "text": "F2.2",
+      "location": "front camera lens area",
+      "evidence_type": "visible",
+      "confidence": "high"
+    }
+  ],
+  "visible_components": [
+    {
+      "name": "main body shell",
+      "component_type": "structure/enclosure",
+      "count": 1,
+      "location": "center body",
+      "visibility": "clear",
+      "evidence_type": "visible",
+      "visual_evidence": "gray molded central housing encloses the electronics and battery area",
+      "confidence": "high"
+    },
+    {
+      "name": "propellers",
+      "component_type": "propulsion",
+      "count": 4,
+      "location": "end of each arm",
+      "visibility": "clear",
+      "evidence_type": "visible",
+      "visual_evidence": "black two-blade propellers attached above each motor housing",
+      "confidence": "high"
+    },
+    {
+      "name": "motor housings",
+      "component_type": "propulsion",
+      "count": 4,
+      "location": "end of each arm below propellers",
+      "visibility": "clear",
+      "evidence_type": "visible",
+      "visual_evidence": "dark circular housings at the arm tips under the propeller hubs",
+      "confidence": "high"
+    },
+    {
+      "name": "front camera gimbal",
+      "component_type": "sensing/payload",
+      "count": 1,
+      "location": "front underside of central body",
+      "visibility": "clear",
+      "evidence_type": "visible",
+      "visual_evidence": "small camera module mounted at the front on a suspended bracket",
+      "confidence": "high"
+    },
+    {
+      "name": "battery bay",
+      "component_type": "power",
+      "count": 1,
+      "location": "rear/top of central body",
+      "visibility": "partial",
+      "evidence_type": "inferred_from_visual",
+      "visual_evidence": "rectangular rear/top body section resembles a removable battery compartment, but no label is readable",
+      "confidence": "medium"
+    }
+  ],
+  "material_candidates": [
+    {
+      "component_name": "main body shell",
+      "material": "molded plastic, likely ABS or polycarbonate blend",
+      "evidence_type": "inferred_from_visual",
+      "visual_evidence": "smooth gray molded panels with rounded edges and panel seams",
+      "confidence": "medium"
+    },
+    {
+      "component_name": "propellers",
+      "material": "black plastic, likely nylon or reinforced polymer",
+      "evidence_type": "inferred_from_visual",
+      "visual_evidence": "thin black molded blades with uniform finish",
+      "confidence": "medium"
+    },
+    {
+      "component_name": "camera lens",
+      "material": "glass or coated optical plastic",
+      "evidence_type": "inferred_from_visual",
+      "visual_evidence": "small reflective lens surface in the front camera module",
+      "confidence": "medium"
+    }
+  ],
+  "uncertainties": [
+    {
+      "item": "exact plastic resin",
+      "reason": "surface finish suggests molded plastic, but resin type cannot be confirmed visually"
+    },
+    {
+      "item": "battery capacity and chemistry",
+      "reason": "battery label is not readable and pack is only partially visible"
+    },
+    {
+      "item": "flight controller and communication hardware",
+      "reason": "internal electronics are enclosed and not visible"
+    }
+  ],
+  "downstream_hints": {
+    "likely_subsystems_present": [
+      "propulsion",
+      "structure",
+      "power",
+      "sensing/payload",
+      "control",
+      "communication"
+    ],
+    "cost_relevant_materials": [
+      "molded plastic body shell",
+      "plastic propellers",
+      "four motor assemblies",
+      "camera/gimbal module",
+      "lithium battery pack"
+    ],
+    "do_not_assume": [
+      "exact motor specification",
+      "battery capacity",
+      "sensor suite",
+      "GPS presence",
+      "specific plastic resin"
+    ]
+  }
+}
+
+Output exactly one valid JSON object. ADK will store it in vision_output.""",
         output_key="vision_output"
     )
 
@@ -90,9 +336,39 @@ def create_subsystem_agent():
         name="subsystem_agent",
         model=get_model(),
         instruction="""You are the Subsystem Agent.
-Read the identified components and materials from 'vision_output' state key.
-Map each component into one of these systems: power_system, sensing_system, structure_system, control_system, communication_system, or uncertain.
-Return a structured JSON object showing this mapping.
+Read the structured visual evidence from the 'vision_output' state key.
+Classify primarily from vision_output.visible_components. If a component is only mentioned in
+material_candidates, do not classify it as a separate component unless it also appears in
+visible_components. Do not invent internal components unless they are explicitly visible,
+user-provided, or present in text_observed.
+
+Use this taxonomy:
+- propulsion_system: motors, propellers, motor housings, ducts, and other thrust-generating parts.
+- power_system: battery, battery bay, charging contacts, BMS, power distribution, power wiring, or
+  visible/specified energy-storage or energy-distribution components. Do not put motors,
+  propellers, motor housings, ducts, or thrust-generating parts here.
+- structure_enclosure_system: frame, shell, arms, landing gear, guards, housings, covers, and
+  structural supports.
+- sensing_payload_system: cameras, gimbals, lenses, obstacle sensors, payloads, and externally
+  visible sensing modules.
+- control_electronics_system: visible or explicitly specified controllers, ESCs, processors,
+  control boards, or internal electronics.
+- communication_navigation_system: visible or explicitly specified antennas, GPS/GNSS modules,
+  receivers, radios, or navigation modules.
+- thermal_system: vents, heatsinks, fans, thermal pads, or visible cooling paths.
+- fasteners_mechanisms: screws, clips, hinges, latches, folding joints, pivots, and small hardware.
+- uncertain: visible components that cannot be confidently classified.
+
+Return a structured JSON object with exactly these keys:
+- propulsion_system
+- power_system
+- structure_enclosure_system
+- sensing_payload_system
+- control_electronics_system
+- communication_navigation_system
+- thermal_system
+- fasteners_mechanisms
+- uncertain
 Save your output into the session state key 'subsystem_output'.""",
         output_key="subsystem_output"
     )
