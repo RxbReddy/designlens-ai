@@ -340,9 +340,9 @@ def create_subsystem_agent():
         instruction="""You are the Subsystem Agent.
 Read the structured visual evidence from the 'vision_output' state key.
 Classify primarily from vision_output.visible_components. If a component is only mentioned in
-material_candidates, do not classify it as a separate component unless it also appears in
-visible_components. Do not invent internal components unless they are explicitly visible,
-user-provided, or present in text_observed.
+vision_output.material_candidates, do not classify it as a separate component unless it also appears in
+vision_output.visible_components. Do not invent internal components unless they are explicitly visible,
+user-provided, or present in vision_output.text_observed.
 
 Use this taxonomy:
 - propulsion_system: motors, propellers, motor housings, ducts, and other thrust-generating parts.
