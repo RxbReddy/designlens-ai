@@ -116,7 +116,7 @@ Return valid JSON only using this compact schema:
     {
       "name": "string",
       "component_type": "propulsion | structure/enclosure | power | sensing/payload | control | communication | fastener | thermal | unknown",
-      "count": "number | unknown",
+      "count": "number | null",
       "location": "string",
       "visibility": "clear | partial | occluded | inferred",
       "evidence_type": "visible | inferred_from_visual | user_provided_spec",
