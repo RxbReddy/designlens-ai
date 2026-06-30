@@ -96,12 +96,12 @@ Return valid JSON only using this compact schema:
     }
   ],
   "drone_configuration": {
-    "rotor_count": "number | unknown",
+    "rotor_count": "number | null",
     "frame_layout": "string",
-    "payload_or_camera_visible": true,
-    "battery_visible": true,
-    "landing_gear_visible": true,
-    "propeller_guards_visible": false,
+    "payload_or_camera_visible": "boolean | null",
+    "battery_visible": "boolean | null",
+    "landing_gear_visible": "boolean | null",
+    "propeller_guards_visible": "boolean | null",
     "confidence": "high | medium | low"
   },
   "text_observed": [
