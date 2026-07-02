@@ -430,7 +430,7 @@ Expected JSON:
     "likely_subsystems_present": [
       "structure",
       "power",
-      "sensing/payload",
+      "sensing",
       "control",
       "communication"
     ],
