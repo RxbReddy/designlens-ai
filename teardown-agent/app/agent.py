@@ -514,9 +514,44 @@ def create_cost_agent():
         name="cost_agent",
         model=get_model(),
         instruction="""You are the Cost Agent.
-Read the materials from 'vision_output' and subsystem mapping from 'subsystem_output'.
-For each identified material, query the 'get_material_cost' tool to fetch current prices.
-Combine this with observations to rank the top cost drivers for manufacturing this product.
+Read these state keys:
+- vision_output.material_candidates
+- vision_output.visible_components
+- vision_output.uncertainties
+- subsystem_output
+
+Use the new subsystem taxonomy exactly as provided by subsystem_output:
+- propulsion_system
+- power_system
+- structure_enclosure_system
+- sensing_payload_system
+- control_electronics_system
+- communication_navigation_system
+- thermal_system
+- fasteners_mechanisms
+- uncertain
+
+Do not use old subsystem meanings. Motors, propellers, motor housings, ducts, and thrust-generating
+parts belong to propulsion_system, not power_system. power_system is only for visible or specified
+energy storage/distribution components such as batteries, battery bays, charging contacts, BMS,
+power distribution, or power wiring.
+
+Normalize material names before calling get_material_cost:
+- If a material is written as alternatives such as "ABS or polycarbonate", query each likely material
+  separately if useful.
+- If a material is broad such as "molded plastic", query common broad candidates such as ABS and/or
+  polycarbonate when appropriate.
+- Avoid exact alloy, resin, or composite grades unless they are visible, labeled, or user-provided.
+
+Preserve confidence from vision_output.material_candidates. Separate visible evidence from inferred
+assumptions. Do not state hidden/internal components as facts unless they are visible or user-provided.
+If a cost driver involves inferred internal components, mark it as an assumption.
+
+Return valid JSON with:
+- material_lookup_results: materials queried and tool results
+- cost_drivers: ranked component/subsystem cost drivers with evidence_type, confidence, and reasoning
+- assumptions: inferred cost factors that are plausible but not directly visible
+- uncertainty_notes: cost-relevant unknowns from vision_output.uncertainties
 Save your output into the session state key 'cost_output'.""",
         tools=[get_material_cost],
         output_key="cost_output"
