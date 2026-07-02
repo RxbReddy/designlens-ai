@@ -7,18 +7,18 @@
 
 @layer base {
   :root {
-    /* Neutral scale — warm-leaning dark */
+    /* Neutral scale — warm-leaning dark (channel values for rgb()) */
     --bg-base: 10 10 10;
     --bg-surface: 17 17 17;
     --bg-elevated: 24 24 24;
     --bg-overlay: 32 32 32;
 
-    /* Border */
-    --border-subtle: 255 255 255 / 0.06;
-    --border-default: 255 255 255 / 0.1;
-    --border-strong: 255 255 255 / 0.18;
+    /* Border — pre-computed rgba so they work as direct var() values */
+    --border-subtle:  rgba(255,255,255,0.06);
+    --border-default: rgba(255,255,255,0.10);
+    --border-strong:  rgba(255,255,255,0.18);
 
-    /* Text */
+    /* Text channel values */
     --text-primary: 242 242 242;
     --text-secondary: 160 160 160;
     --text-tertiary: 100 100 100;
@@ -27,10 +27,8 @@
     /* Accent — electric indigo */
     --accent-primary: 99 102 241;
     --accent-hover: 129 140 248;
-    --accent-subtle: 99 102 241 / 0.12;
-    --accent-glow: 99 102 241 / 0.3;
 
-    /* Status colors */
+    /* Status color channel values */
     --success: 52 211 153;
     --warning: 251 191 36;
     --error: 248 113 113;
@@ -78,7 +76,7 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgb(var(--border-strong));
+    background: var(--border-strong);
     border-radius: 3px;
   }
 }
@@ -88,14 +86,14 @@
   background: rgb(var(--bg-elevated) / 0.8);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgb(var(--border-default));
+  border: 1px solid var(--border-default);
 }
 
 .glass-subtle {
   background: rgb(var(--bg-surface) / 0.6);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgb(var(--border-subtle));
+  border: 1px solid var(--border-subtle);
 }
 
 /* ---- Markdown prose ---- */
@@ -132,7 +130,7 @@
 
 .prose-engineering hr {
   border: none;
-  border-top: 1px solid rgb(var(--border-default));
+  border-top: 1px solid var(--border-default);
   margin: 2em 0;
 }
 
@@ -145,7 +143,7 @@
   font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
   font-size: 0.85em;
   background: rgb(var(--bg-overlay));
-  border: 1px solid rgb(var(--border-default));
+  border: 1px solid var(--border-default);
   border-radius: 4px;
   padding: 0.1em 0.35em;
   color: rgb(var(--accent-hover));
@@ -153,7 +151,7 @@
 
 .prose-engineering pre {
   background: rgb(var(--bg-overlay));
-  border: 1px solid rgb(var(--border-default));
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   padding: 1rem 1.25rem;
   overflow-x: auto;
@@ -182,12 +180,12 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid rgb(var(--border-default));
+  border-bottom: 1px solid var(--border-default);
 }
 
 .prose-engineering td {
   padding: 0.6rem 0.75rem;
-  border-bottom: 1px solid rgb(var(--border-subtle));
+  border-bottom: 1px solid var(--border-subtle);
   color: rgb(var(--text-secondary));
 }
 

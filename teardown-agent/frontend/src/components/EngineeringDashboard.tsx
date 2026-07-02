@@ -342,7 +342,7 @@ export default function EngineeringDashboard({
   return (
     <div className="min-h-screen bg-[rgb(var(--bg-base))]">
       {/* Top nav */}
-      <header className="sticky top-0 z-20 border-b border-white/6 bg-[rgb(var(--bg-base))/90] backdrop-blur-md">
+      <header className="sticky top-0 z-20 border-b border-white/6 bg-[rgba(10,10,10,0.9)] backdrop-blur-md">
         <div className="mx-auto max-w-4xl px-4 h-12 flex items-center justify-between">
           <span className="text-sm font-semibold text-[rgb(var(--text-primary))] tracking-tight">
             DesignLens <span className="text-indigo-400">AI</span>

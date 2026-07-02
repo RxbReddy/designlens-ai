@@ -26,7 +26,7 @@ export default function MarkdownReport({ markdown, onBack, onReset }: MarkdownRe
   return (
     <div className="min-h-screen bg-[rgb(var(--bg-base))]">
       {/* Top nav */}
-      <header className="sticky top-0 z-20 border-b border-white/6 bg-[rgb(var(--bg-base))/90] backdrop-blur-md">
+      <header className="sticky top-0 z-20 border-b border-white/6 bg-[rgba(10,10,10,0.9)] backdrop-blur-md">
         <div className="mx-auto max-w-3xl px-4 h-12 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
