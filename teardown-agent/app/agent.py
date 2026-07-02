@@ -327,6 +327,127 @@ Expected JSON:
   }
 }
 
+Compact non-drone example:
+Input context: Over-ear wireless headphones shown from a front/side angle. The headband has
+a visible "SoundCore" logo, padded ear cups, hinge yokes, and a small USB-C charging port.
+
+Expected JSON:
+{
+  "product_identification": {
+    "category": "headphones",
+    "subcategory": "over-ear wireless headphones",
+    "confidence": "high",
+    "evidence": [
+      "two padded ear cups connected by an adjustable headband are visible",
+      "USB-C charging port suggests wireless rechargeable electronics"
+    ]
+  },
+  "image_summary": [
+    {
+      "image_id": "image_1",
+      "view": "angled",
+      "description": "Over-ear wireless headphones with padded ear cups, adjustable headband, hinge yokes, visible logo, and charging port."
+    }
+  ],
+  "drone_configuration": {
+    "rotor_count": null,
+    "frame_layout": "unknown",
+    "payload_or_camera_visible": null,
+    "battery_visible": false,
+    "landing_gear_visible": null,
+    "propeller_guards_visible": null,
+    "confidence": "low"
+  },
+  "text_observed": [
+    {
+      "text": "SoundCore",
+      "location": "outer headband",
+      "evidence_type": "visible",
+      "confidence": "high"
+    }
+  ],
+  "visible_components": [
+    {
+      "name": "headband",
+      "component_type": "structure/enclosure",
+      "count": 1,
+      "location": "top connecting both ear cups",
+      "visibility": "clear",
+      "evidence_type": "visible",
+      "visual_evidence": "arched band spanning between left and right ear cups",
+      "confidence": "high"
+    },
+    {
+      "name": "ear cups",
+      "component_type": "structure/enclosure",
+      "count": 2,
+      "location": "left and right sides",
+      "visibility": "clear",
+      "evidence_type": "visible",
+      "visual_evidence": "two rounded padded housings for the ears",
+      "confidence": "high"
+    },
+    {
+      "name": "USB-C charging port",
+      "component_type": "power",
+      "count": 1,
+      "location": "lower edge of one ear cup",
+      "visibility": "clear",
+      "evidence_type": "visible",
+      "visual_evidence": "small oval charging connector opening",
+      "confidence": "high"
+    }
+  ],
+  "material_candidates": [
+    {
+      "component_name": "ear cup shells",
+      "material": "molded plastic",
+      "evidence_type": "inferred_from_visual",
+      "visual_evidence": "smooth uniform matte housing surfaces",
+      "confidence": "medium"
+    },
+    {
+      "component_name": "ear cushions",
+      "material": "soft foam covered with synthetic leather or fabric",
+      "evidence_type": "inferred_from_visual",
+      "visual_evidence": "padded compressible-looking rings around each ear cup",
+      "confidence": "medium"
+    }
+  ],
+  "uncertainties": [
+    {
+      "item": "battery capacity and cell type",
+      "reason": "battery is internal and no label is visible"
+    },
+    {
+      "item": "speaker driver size and magnet type",
+      "reason": "drivers are hidden behind the ear cushions and grille"
+    }
+  ],
+  "downstream_hints": {
+    "likely_subsystems_present": [
+      "structure",
+      "power",
+      "sensing/payload",
+      "control",
+      "communication"
+    ],
+    "cost_relevant_materials": [
+      "molded plastic ear cup shells",
+      "padded ear cushions",
+      "internal battery",
+      "speaker drivers",
+      "wireless electronics"
+    ],
+    "do_not_assume": [
+      "active noise cancellation",
+      "exact battery capacity",
+      "driver diameter",
+      "Bluetooth version"
+    ]
+  }
+}
+
 Output exactly one valid JSON object. ADK will store it in vision_output.""",
         output_key="vision_output"
     )
