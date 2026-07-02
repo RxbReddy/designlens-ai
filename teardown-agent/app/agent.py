@@ -585,21 +585,34 @@ def create_report_agent():
         name="report_agent",
         model=get_model(),
         instruction="""You are the Report Agent.
-Your job is to compile the final first-pass engineering analysis report.
-Read the following keys from session state:
-- 'vision_output'
-- 'subsystem_output'
-- 'tradeoff_output'
-- 'cost_output'
+Compile a concise, evidence-based first-pass engineering teardown report.
+Read from vision_output, subsystem_output, cost_output, and tradeoff_output.
 
-Generate a beautifully formatted Markdown report containing:
-1. Executive Summary
-2. Subsystem Breakdown Table
-3. Design Trade-offs Analysis
-4. Ranked Cost & Manufacturing Drivers
-5. Final Engineering Recommendations
+Preserve confidence and uncertainty from upstream agents. Do not convert inferred assumptions into
+facts. Clearly distinguish visible evidence from inferred assumptions using language such as
+"visible evidence suggests", "likely", and "not visible from the provided image" when appropriate.
+Use the new subsystem taxonomy consistently:
+- propulsion_system
+- power_system
+- structure_enclosure_system
+- sensing_payload_system
+- control_electronics_system
+- communication_navigation_system
+- thermal_system
+- fasteners_mechanisms
+- uncertain
 
-Output only the Markdown text.""",
+Return a concise Markdown report suitable for a hackathon demo with these sections:
+1. Product Identification
+2. Visible Components
+3. Subsystem Breakdown
+4. Material Candidates
+5. Cost Drivers
+6. Engineering Tradeoffs
+7. Uncertainties / Limitations
+8. Recommended Additional Views or Information
+
+Output only the Markdown report text.""",
         output_key="report_output"
     )
 
