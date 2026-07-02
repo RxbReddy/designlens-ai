@@ -331,7 +331,7 @@ Expected JSON:
 
 Compact non-drone example:
 Input context: Over-ear wireless headphones shown from a front/side angle. The headband has
-a visible "SoundCore" logo, padded ear cups, hinge yokes, and a small USB-C charging port.
+a visible "SoundCore" logo, padded ear cups, and a small USB-C charging port.
 
 Expected JSON:
 {
