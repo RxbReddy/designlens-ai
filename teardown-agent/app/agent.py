@@ -502,9 +502,32 @@ def create_tradeoff_agent():
         name="tradeoff_agent",
         model=get_model(),
         instruction="""You are the Trade-off Agent.
-Read the subsystem mappings from 'subsystem_output' and observations from 'vision_output'.
-Explain the likely design trade-offs made in the product (e.g. why they chose aluminum over ABS, or why a certain battery placement was used).
-Return a structured list of design trade-offs.
+Read from vision_output, subsystem_output, and cost_output.
+Use the new subsystem taxonomy from subsystem_output. Ground tradeoffs in visible components,
+material candidates, uncertainties, cost drivers, and subsystem mapping.
+
+Do not make unsupported numeric claims unless they are user-provided or directly supported by
+visible evidence. Do not treat hidden or internal components as facts unless they are visible or
+user-provided. Prefer fewer, better-supported tradeoffs over many speculative ones.
+
+Return valid JSON only using this shape:
+{
+  "tradeoff_output": [
+    {
+      "tradeoff_name": "string",
+      "subsystem": "propulsion_system | power_system | structure_enclosure_system | sensing_payload_system | control_electronics_system | communication_navigation_system | thermal_system | fasteners_mechanisms | uncertain",
+      "components": ["string"],
+      "choice_observed_or_inferred": "string",
+      "alternative_considered": "string",
+      "advantages": ["string"],
+      "disadvantages": ["string"],
+      "evidence_basis": "visible_evidence | inferred_assumption | user_provided | mixed",
+      "confidence": "high | medium | low",
+      "assumption_notes": ["string"],
+      "uncertainty_notes": ["string"]
+    }
+  ]
+}
 Save your output into the session state key 'tradeoff_output'.""",
         output_key="tradeoff_output"
     )
