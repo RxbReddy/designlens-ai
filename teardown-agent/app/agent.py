@@ -96,12 +96,12 @@ Return valid JSON only using this compact schema:
     }
   ],
   "drone_configuration": {
-    "rotor_count": "number | unknown",
+    "rotor_count": "number | null",
     "frame_layout": "string",
-    "payload_or_camera_visible": true,
-    "battery_visible": true,
-    "landing_gear_visible": true,
-    "propeller_guards_visible": false,
+    "payload_or_camera_visible": "boolean | null",
+    "battery_visible": "boolean | null",
+    "landing_gear_visible": "boolean | null",
+    "propeller_guards_visible": "boolean | null",
     "confidence": "high | medium | low"
   },
   "text_observed": [
@@ -116,7 +116,7 @@ Return valid JSON only using this compact schema:
     {
       "name": "string",
       "component_type": "propulsion | structure/enclosure | power | sensing/payload | control | communication | fastener | thermal | unknown",
-      "count": "number | unknown",
+      "count": "number | null",
       "location": "string",
       "visibility": "clear | partial | occluded | inferred",
       "evidence_type": "visible | inferred_from_visual | user_provided_spec",
@@ -133,6 +133,8 @@ Return valid JSON only using this compact schema:
       "confidence": "high | medium | low"
     }
   ],
+  "materials": ["string"],
+  "observations": ["string"],
   "uncertainties": [
     {
       "item": "string",
@@ -459,9 +461,9 @@ def create_subsystem_agent():
         instruction="""You are the Subsystem Agent.
 Read the structured visual evidence from the 'vision_output' state key.
 Classify primarily from vision_output.visible_components. If a component is only mentioned in
-material_candidates, do not classify it as a separate component unless it also appears in
-visible_components. Do not invent internal components unless they are explicitly visible,
-user-provided, or present in text_observed.
+vision_output.material_candidates, do not classify it as a separate component unless it also appears in
+vision_output.visible_components. Do not invent internal components unless they are explicitly visible,
+user-provided, or present in vision_output.text_observed.
 
 Use this taxonomy:
 - propulsion_system: motors, propellers, motor housings, ducts, and other thrust-generating parts.
@@ -490,6 +492,7 @@ Return a structured JSON object with exactly these keys:
 - thermal_system
 - fasteners_mechanisms
 - uncertain
+Each key must map to a JSON array of objects: {"component_name": "string", "rationale": "string", "confidence": "high | medium | low"}.
 Save your output into the session state key 'subsystem_output'.""",
         output_key="subsystem_output"
     )
