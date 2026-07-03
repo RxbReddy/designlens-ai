@@ -50,7 +50,7 @@ except (DefaultCredentialsError, Exception):
 # ---------------------------------------------------------------------------
 _env_origins = os.getenv("ALLOW_ORIGINS", "")
 allow_origins: list[str] = (
-    _env_origins.split(",")
+    [o.strip() for o in _env_origins.split(",") if o.strip()]
     if _env_origins
     else [
         "http://localhost:3000",
