@@ -1,7 +1,5 @@
 "use client";
 
-import React from "react";
-import Image from "next/image";
 import { motion } from "framer-motion";
 import { Scan, X, FileImage, AlertCircle } from "lucide-react";
 import type { UploadedFile } from "@/types/agent";
