@@ -18,7 +18,7 @@ const API_BASE =
 
 const IS_MOCK =
   process.env.NEXT_PUBLIC_MOCK_API === "true" ||
-  !process.env.NEXT_PUBLIC_API_URL;
+  (!process.env.NEXT_PUBLIC_API_URL && process.env.NODE_ENV !== "production");
 
 // ADK session identifiers
 const USER_ID = "frontend-user";
