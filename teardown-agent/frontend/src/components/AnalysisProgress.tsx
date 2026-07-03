@@ -105,14 +105,20 @@ function StageRow({ stage }: { stage: AgentStage }) {
               </div>
             </motion.div>
           )}
-          {stage.status === "idle" && (
+          {(stage.status === "idle" || stage.status === "error") && (
             <motion.div
-              key="idle"
+              key={stage.status}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <Clock size={14} className="text-[rgb(var(--text-muted))]" />
+              {stage.status === "idle" ? (
+                <Clock size={14} className="text-[rgb(var(--text-muted))]" />
+              ) : (
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-400/15 border border-red-400/30">
+                  <span className="text-[10px] font-bold text-red-400">!</span>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
