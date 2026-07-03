@@ -80,6 +80,11 @@ consumer product; drones are the primary MVP target and the example below is dro
 Extract visual evidence for downstream agents; do not perform subsystem mapping, cost estimation,
 or broad engineering tradeoff analysis.
 
+Scope rule: In scope are consumer products, vehicles, machines, tools, electronics, appliances,
+aerospace/robotics/mechanical systems, and other engineered physical objects. Out of scope are
+animals, people, plants, food-only images, landscapes, artwork, logos, screenshots, text-only
+images, or anything that is not a physical engineered product or system.
+
 Return valid JSON only using this compact schema:
 {
   "product_identification": {
@@ -149,13 +154,27 @@ Return valid JSON only using this compact schema:
 }
 
 Rules:
+- If the image is out of scope, set product_identification.category to "out_of_scope", explain the
+  reason in product_identification.evidence, preserve the same JSON schema as much as possible, and
+  do not invent teardown components, materials, subsystems, or cost hints. Return empty arrays for
+  visible_components, material_candidates, downstream_hints.likely_subsystems_present,
+  downstream_hints.cost_relevant_materials, and downstream_hints.do_not_assume.
+- If the image is in scope, continue the normal first-pass engineering teardown.
 - Separate directly visible evidence from inferred assumptions.
 - Be conservative. If a detail is not visible, put it in uncertainties or do_not_assume.
+- Specific product, model, trim, or manufacturer identification is allowed when visual evidence is
+  strong. If the identification relies on visual inference rather than explicit readable branding,
+  badges, labels, or user-provided specs, use wording like "likely", "appears to be", or "possibly".
+  Use high confidence only when supported by explicit visible text, labels, badges, logos, or
+  user-provided specs; otherwise use medium confidence for visually inferred specific model/trim
+  claims.
 - Use null for unknown numeric or boolean values. Use "unknown" for unknown descriptive strings.
 - Attach material candidates to specific components when possible, but keep material inference
-  conservative.
+  conservative. Prefer "possibly" or "likely" for inferred materials.
 - Do not name exact alloy, resin, or composite grades unless they are printed, labeled, or visually
   certain.
+- Avoid exact manufacturing processes such as "forged", "autoclave-cured", "CNC-machined", or exact
+  material grades unless they are visible, labeled, user-provided, or strongly justified.
 - Do not list internal components as visible unless they are physically visible in the image.
 - Keep drone_configuration always present. For non-drone products, populate its fields with null
   or "unknown" as appropriate.
@@ -502,9 +521,32 @@ def create_tradeoff_agent():
         name="tradeoff_agent",
         model=get_model(),
         instruction="""You are the Trade-off Agent.
-Read the subsystem mappings from 'subsystem_output' and observations from 'vision_output'.
-Explain the likely design trade-offs made in the product (e.g. why they chose aluminum over ABS, or why a certain battery placement was used).
-Return a structured list of design trade-offs.
+Read from vision_output, subsystem_output, and cost_output.
+Use the new subsystem taxonomy from subsystem_output. Ground tradeoffs in visible components,
+material candidates, uncertainties, cost drivers, and subsystem mapping.
+
+Do not make unsupported numeric claims unless they are user-provided or directly supported by
+visible evidence. Do not treat hidden or internal components as facts unless they are visible or
+user-provided. Prefer fewer, better-supported tradeoffs over many speculative ones.
+
+Return valid JSON only using this shape:
+{
+  "tradeoff_output": [
+    {
+      "tradeoff_name": "string",
+      "subsystem": "propulsion_system | power_system | structure_enclosure_system | sensing_payload_system | control_electronics_system | communication_navigation_system | thermal_system | fasteners_mechanisms | uncertain",
+      "components": ["string"],
+      "choice_observed_or_inferred": "string",
+      "alternative_considered": "string",
+      "advantages": ["string"],
+      "disadvantages": ["string"],
+      "evidence_basis": "visible_evidence | inferred_assumption | user_provided | mixed",
+      "confidence": "high | medium | low",
+      "assumption_notes": ["string"],
+      "uncertainty_notes": ["string"]
+    }
+  ]
+}
 Save your output into the session state key 'tradeoff_output'.""",
         output_key="tradeoff_output"
     )
@@ -514,9 +556,54 @@ def create_cost_agent():
         name="cost_agent",
         model=get_model(),
         instruction="""You are the Cost Agent.
-Read the materials from 'vision_output' and subsystem mapping from 'subsystem_output'.
-For each identified material, query the 'get_material_cost' tool to fetch current prices.
-Combine this with observations to rank the top cost drivers for manufacturing this product.
+Read these state keys:
+- vision_output.material_candidates
+- vision_output.visible_components
+- vision_output.uncertainties
+- subsystem_output
+
+If vision_output.product_identification.category == "out_of_scope", return valid JSON with:
+{
+  "material_lookup_results": [],
+  "cost_drivers": [],
+  "assumptions": [],
+  "uncertainty_notes": []
+}
+Do not add pseudo-cost reasoning. Do not mention biological materials, natural structures, or
+non-engineering cost factors.
+
+Use the new subsystem taxonomy exactly as provided by subsystem_output:
+- propulsion_system
+- power_system
+- structure_enclosure_system
+- sensing_payload_system
+- control_electronics_system
+- communication_navigation_system
+- thermal_system
+- fasteners_mechanisms
+- uncertain
+
+Do not use old subsystem meanings. Motors, propellers, motor housings, ducts, and thrust-generating
+parts belong to propulsion_system, not power_system. power_system is only for visible or specified
+energy storage/distribution components such as batteries, battery bays, charging contacts, BMS,
+power distribution, or power wiring.
+
+Normalize material names before calling get_material_cost:
+- If a material is written as alternatives such as "ABS or polycarbonate", query each likely material
+  separately if useful.
+- If a material is broad such as "molded plastic", query common broad candidates such as ABS and/or
+  polycarbonate when appropriate.
+- Avoid exact alloy, resin, or composite grades unless they are visible, labeled, or user-provided.
+
+Preserve confidence from vision_output.material_candidates. Separate visible evidence from inferred
+assumptions. Do not state hidden/internal components as facts unless they are visible or user-provided.
+If a cost driver involves inferred internal components, mark it as an assumption.
+
+Return valid JSON with:
+- material_lookup_results: materials queried and tool results
+- cost_drivers: ranked component/subsystem cost drivers with evidence_type, confidence, and reasoning
+- assumptions: inferred cost factors that are plausible but not directly visible
+- uncertainty_notes: cost-relevant unknowns from vision_output.uncertainties
 Save your output into the session state key 'cost_output'.""",
         tools=[get_material_cost],
         output_key="cost_output"
@@ -527,21 +614,43 @@ def create_report_agent():
         name="report_agent",
         model=get_model(),
         instruction="""You are the Report Agent.
-Your job is to compile the final first-pass engineering analysis report.
-Read the following keys from session state:
-- 'vision_output'
-- 'subsystem_output'
-- 'tradeoff_output'
-- 'cost_output'
+Compile a concise, evidence-based first-pass engineering teardown report.
+Read from vision_output, subsystem_output, cost_output, and tradeoff_output.
 
-Generate a beautifully formatted Markdown report containing:
-1. Executive Summary
-2. Subsystem Breakdown Table
-3. Design Trade-offs Analysis
-4. Ranked Cost & Manufacturing Drivers
-5. Final Engineering Recommendations
+If vision_output.product_identification.category == "out_of_scope", output a short Markdown message
+only. Clearly say the uploaded image is outside the supported scope, explain the reason using
+vision_output.product_identification.evidence, and ask the user to upload an engineered physical
+product or system. Do not include the normal 8-section teardown report. Do not analyze biological
+or natural materials, subsystems, cost drivers, or tradeoffs.
 
-Output only the Markdown text.""",
+Preserve confidence and uncertainty from upstream agents. Do not convert inferred assumptions into
+facts. Clearly distinguish visible evidence from inferred assumptions using language such as
+"visible evidence suggests", "likely", and "not visible from the provided image" when appropriate.
+Preserve calibration for specific product/model/trim/manufacturer, material, and manufacturing
+claims: do not turn "likely", "appears to be", "possibly", or medium-confidence upstream claims into
+confirmed facts.
+Use the new subsystem taxonomy consistently:
+- propulsion_system
+- power_system
+- structure_enclosure_system
+- sensing_payload_system
+- control_electronics_system
+- communication_navigation_system
+- thermal_system
+- fasteners_mechanisms
+- uncertain
+
+Return a concise Markdown report suitable for a hackathon demo with these sections:
+1. Product Identification
+2. Visible Components
+3. Subsystem Breakdown
+4. Material Candidates
+5. Cost Drivers
+6. Engineering Tradeoffs
+7. Uncertainties / Limitations
+8. Recommended Additional Views or Information
+
+Output only the Markdown report text.""",
         output_key="report_output"
     )
 
