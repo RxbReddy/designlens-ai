@@ -72,7 +72,8 @@ allow_origins: list[str] = (
 # ---------------------------------------------------------------------------
 logs_bucket_name = os.environ.get("LOGS_BUCKET_NAME")
 AGENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-session_service_uri = None
+from app.app_utils import services
+session_service_uri = "shared://session"
 artifact_service_uri = f"gs://{logs_bucket_name}" if logs_bucket_name else None
 
 app: FastAPI = get_fast_api_app(
@@ -82,6 +83,9 @@ app: FastAPI = get_fast_api_app(
     allow_origins=allow_origins,
     session_service_uri=session_service_uri,
 )
+from app.app_utils.reasoning_engine_adapter import attach_reasoning_engine_routes
+attach_reasoning_engine_routes(app)
+
 app.title = "teardown-agent"
 app.description = "API for interacting with the Agent teardown-agent"
 
