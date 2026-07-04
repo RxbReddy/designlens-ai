@@ -443,27 +443,16 @@ export default function EngineeringDashboard({
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
             <SubsystemCard result={result} />
           </motion.div>
-          
-          {(() => {
-            const hasTradeoffs = (result.tradeoffOutput?.tradeoff_output ?? []).length > 0;
-            const hasCosts = (result.costOutput?.cost_drivers ?? []).length > 0;
-            if (!hasTradeoffs && !hasCosts) return null;
-            
-            return (
-              <div className={hasTradeoffs && hasCosts ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "grid grid-cols-1 gap-4"}>
-                {hasTradeoffs && (
-                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                    <TradeoffsCard result={result} />
-                  </motion.div>
-                )}
-                {hasCosts && (
-                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-                    <CostCard result={result} />
-                  </motion.div>
-                )}
-              </div>
-            );
-          })()}
+          {(result.tradeoffOutput?.tradeoff_output ?? []).length > 0 && (
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+              <TradeoffsCard result={result} />
+            </motion.div>
+          )}
+          {(result.costOutput?.cost_drivers ?? []).length > 0 && (
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+              <CostCard result={result} />
+            </motion.div>
+          )}
         </div>
       </main>
     </div>

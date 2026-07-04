@@ -173,8 +173,16 @@ export async function streamAnalysis(
         if (rawOutput !== undefined) {
           if (typeof rawOutput === "string" && agentId !== "report_agent") {
             try {
-              const match = rawOutput.match(/```(?:json)?\\s*([\\s\\S]*?)\\s*```/);
-              const jsonStr = match ? match[1] : rawOutput;
+              let jsonStr = rawOutput;
+              const match = rawOutput.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+              if (match) {
+                jsonStr = match[1];
+              } else {
+                const jsonMatch = rawOutput.match(/(\{[\s\S]*\})/);
+                if (jsonMatch) {
+                  jsonStr = jsonMatch[1];
+                }
+              }
               rawOutput = JSON.parse(jsonStr);
             } catch (e) {
               console.warn("Failed to parse JSON for", agentId, e);

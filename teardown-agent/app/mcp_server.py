@@ -29,16 +29,6 @@ COSTS = {
 }
 
 @mcp.tool()
-def get_material_cost(material_name: str) -> dict:
-    """Look up current manufacturing costs for a single material.
-
-    Args:
-        material_name: The name of the material to query (e.g. 'ABS', 'aluminum', 'copper').
-    """
-    mat = material_name.lower().strip()
-    return COSTS.get(mat, {"price_per_kg": "Unknown / Custom", "complexity_premium": "high"})
-
-@mcp.tool()
 def get_materials_costs(materials: list[str]) -> dict:
     """Look up current manufacturing costs for a list of materials in batch.
 

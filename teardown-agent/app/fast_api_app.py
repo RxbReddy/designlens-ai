@@ -13,6 +13,7 @@
 # limitations under the License.
 import logging
 import os
+import sys
 
 import google.auth
 from fastapi import FastAPI, Query
@@ -25,6 +26,13 @@ from app.app_utils.typing import Feedback
 # ---------------------------------------------------------------------------
 # Logging — gracefully falls back to stdlib logging when GCP creds are absent
 # ---------------------------------------------------------------------------
+# Configure basic console logging at INFO level so all framework and agent logs go to stdout
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+
 try:
     from google.cloud import logging as google_cloud_logging
     from app.app_utils.telemetry import setup_telemetry
@@ -38,7 +46,6 @@ try:
         _gcp_logger.log_struct(payload, severity="INFO")
 
 except (DefaultCredentialsError, Exception):
-    logging.basicConfig(level=logging.INFO)
     _std_logger = logging.getLogger(__name__)
 
     def _log(payload: dict) -> None:  # type: ignore[misc]
@@ -115,17 +122,49 @@ def fetch_image(url: str = Query(..., description="The URL of the image or webpa
     import base64
     import subprocess
     import re
-    from urllib.parse import urljoin
+    import ipaddress
+    import socket
+    from urllib.parse import urljoin, urlparse
     from fastapi import HTTPException
+
+    def validate_url(target_url: str):
+        try:
+            parsed = urlparse(target_url)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Malformed URL.")
+
+        if parsed.scheme != "https":
+            raise HTTPException(status_code=400, detail="Only HTTPS URLs are allowed for security.")
+
+        hostname = parsed.hostname
+        if not hostname:
+            raise HTTPException(status_code=400, detail="URL is missing a valid hostname.")
+
+        try:
+            addr_info = socket.getaddrinfo(hostname, None)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to resolve host '{hostname}': {str(e)}")
+
+        for addr in addr_info:
+            ip_str = addr[4][0]
+            try:
+                ip_obj = ipaddress.ip_address(ip_str)
+                if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local:
+                    raise HTTPException(status_code=400, detail="Access to local or private network resources is forbidden.")
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Resolved IP is malformed.")
 
     def fetch_url_bytes(target_url: str) -> tuple[bytes, str, str]:
         """Fetch a URL using system curl for better TLS/bot compatibility.
         Returns (body_bytes, content_type, final_url).
         """
+        validate_url(target_url)
+
         result = subprocess.run(
             [
                 "curl", "-s", "-L",
                 "--max-time", "20",
+                "--max-filesize", "10485760",
                 "-H", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
                 "-H", "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
                 "-H", "Accept-Language: en-US,en;q=0.9",
@@ -157,8 +196,14 @@ def fetch_image(url: str = Query(..., description="The URL of the image or webpa
             content_type = parts[1].decode(errors="ignore").strip()
             body = parts[0]
 
+        # Double check post-redirect SSRF
+        validate_url(final_url)
+
         if not body:
             raise RuntimeError("Empty response body from URL")
+
+        if len(body) > 10 * 1024 * 1024:
+            raise RuntimeError("Fetched content exceeds maximum limit of 10MB")
 
         return body, content_type, final_url
 
