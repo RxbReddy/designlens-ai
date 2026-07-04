@@ -46,6 +46,15 @@ export default function Home() {
     setScreen("landing");
   }, [reset]);
 
+  React.useEffect(() => {
+    if (runnerState === "complete" && result) {
+      const isOutOfScope = result.visionOutput?.product_identification?.category === "out_of_scope";
+      if (isOutOfScope) {
+        setShowReport(true);
+      }
+    }
+  }, [runnerState, result]);
+
   // ── Render ────────────────────────────────────────────────
   return (
     <AnimatePresence mode="wait">

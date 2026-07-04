@@ -41,25 +41,29 @@ function ProductOverviewCard({ result, file }: { result: AnalysisResult; file: U
           <img src={file.previewUrl} alt="Product" className="h-full w-full object-cover" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap gap-2 mb-2">
-            <Badge variant="accent">{pi.category}</Badge>
-            <ConfidencePill confidence={pi.confidence} />
-          </div>
-          <h3 className="text-base font-semibold text-[rgb(var(--text-primary))] tracking-tight capitalize">
-            {pi.subcategory}
-          </h3>
-          <div className="mt-2 space-y-1">
-            {pi.evidence.slice(0, 2).map((e, i) => (
-              <div key={i} className="flex items-start gap-2">
-                <ArrowRight size={10} className="text-indigo-400 mt-1 shrink-0" />
-                <p className="text-xs text-[rgb(var(--text-tertiary))] leading-snug">{e}</p>
+          {pi && (
+            <>
+              <div className="flex flex-wrap gap-2 mb-2">
+                <Badge variant="accent">{pi.category}</Badge>
+                <ConfidencePill confidence={pi.confidence} />
               </div>
-            ))}
-          </div>
+              <h3 className="text-base font-semibold text-[rgb(var(--text-primary))] tracking-tight capitalize">
+                {pi.subcategory}
+              </h3>
+              <div className="mt-2 space-y-1">
+                {pi.evidence?.slice(0, 2).map((e, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <ArrowRight size={10} className="text-indigo-400 mt-1 shrink-0" />
+                    <p className="text-xs text-[rgb(var(--text-tertiary))] leading-snug">{e}</p>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
-      {vision.observations.length > 0 && (
+      {vision.observations && vision.observations.length > 0 && (
         <>
           <Divider className="my-4" />
           <div className="space-y-1">
@@ -137,7 +141,7 @@ function SubsystemCard({ result }: { result: AnalysisResult }) {
   if (!subsystems) return null;
 
   const populated = (Object.entries(subsystems) as [SubsystemKey, typeof subsystems[SubsystemKey]][])
-    .filter(([, comps]) => comps.length > 0);
+    .filter(([, comps]) => Array.isArray(comps) && comps.length > 0);
 
   return (
     <Card>
@@ -148,7 +152,7 @@ function SubsystemCard({ result }: { result: AnalysisResult }) {
       />
       <div className="space-y-4">
         {populated.map(([key, components]) => {
-          const meta = SUBSYSTEM_META[key];
+          const meta = SUBSYSTEM_META[key] || { label: String(key).replace(/_/g, ' '), color: "text-zinc-400" };
           return (
             <div key={key}>
               <div className="flex items-center gap-2 mb-2">
@@ -285,7 +289,9 @@ function CostCard({ result }: { result: AnalysisResult }) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-medium text-[rgb(var(--text-muted))] w-4">#{rank}</span>
-                  <span className="text-xs font-medium text-[rgb(var(--text-primary))]">{d.component}</span>
+                  <span className="text-xs font-medium text-[rgb(var(--text-primary))]">
+                    {d.component || (d as any).component_name || (d as any).name || "Unknown Component"}
+                  </span>
                   <ConfidencePill confidence={d.confidence} />
                 </div>
                 {d.estimated_cost_range && (
@@ -339,6 +345,9 @@ interface EngineeringDashboardProps {
 export default function EngineeringDashboard({
   result, file, onViewReport, onReset,
 }: EngineeringDashboardProps) {
+  const isOutOfScope = result.visionOutput?.product_identification?.category === "out_of_scope";
+  const pi = result.visionOutput?.product_identification;
+
   return (
     <div className="min-h-screen bg-[rgb(var(--bg-base))]">
       {/* Top nav */}
@@ -374,9 +383,40 @@ export default function EngineeringDashboard({
           </div>
         </div>
       </header>
-
+ 
       {/* Content */}
       <main className="mx-auto max-w-4xl px-4 py-8 space-y-4">
+        {isOutOfScope && (
+          <Card className="border-red-500/20 bg-red-500/5">
+            <div className="flex gap-3">
+              <AlertTriangle className="text-red-400 shrink-0 mt-0.5" size={16} />
+              <div>
+                <h3 className="text-sm font-semibold text-red-400">Out of Scope</h3>
+                <p className="text-xs text-[rgb(var(--text-secondary))] mt-1">
+                  The uploaded image does not appear to be an engineered physical product or system.
+                </p>
+                {pi?.evidence && (
+                  <ul className="mt-2 space-y-1">
+                    {pi.evidence.map((ev, i) => (
+                      <li key={i} className="text-xs text-[rgb(var(--text-tertiary))] flex items-start gap-1.5">
+                        <ArrowRight size={10} className="text-red-400/60 mt-1 shrink-0" />
+                        <span>{ev}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <button
+                  onClick={onViewReport}
+                  className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer border-none bg-transparent p-0"
+                >
+                  <FileText size={12} />
+                  View Out-of-Scope Report
+                </button>
+              </div>
+            </div>
+          </Card>
+        )}
+
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -403,14 +443,27 @@ export default function EngineeringDashboard({
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
             <SubsystemCard result={result} />
           </motion.div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-              <TradeoffsCard result={result} />
-            </motion.div>
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-              <CostCard result={result} />
-            </motion.div>
-          </div>
+          
+          {(() => {
+            const hasTradeoffs = (result.tradeoffOutput?.tradeoff_output ?? []).length > 0;
+            const hasCosts = (result.costOutput?.cost_drivers ?? []).length > 0;
+            if (!hasTradeoffs && !hasCosts) return null;
+            
+            return (
+              <div className={hasTradeoffs && hasCosts ? "grid grid-cols-1 md:grid-cols-2 gap-4" : "grid grid-cols-1 gap-4"}>
+                {hasTradeoffs && (
+                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                    <TradeoffsCard result={result} />
+                  </motion.div>
+                )}
+                {hasCosts && (
+                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+                    <CostCard result={result} />
+                  </motion.div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </main>
     </div>

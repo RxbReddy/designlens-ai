@@ -47,13 +47,15 @@ interface ConfidencePillProps {
 }
 
 export function ConfidencePill({ confidence }: ConfidencePillProps) {
-  const map: Record<Confidence, { label: string; variant: BadgeProps["variant"] }> = {
+  const map: Record<string, { label: string; variant: BadgeProps["variant"] }> = {
     high: { label: "High Confidence", variant: "success" },
     medium: { label: "Medium Confidence", variant: "warning" },
     low: { label: "Low Confidence", variant: "error" },
   };
-  const { label, variant } = map[confidence];
-  return <Badge variant={variant}>{label}</Badge>;
+  
+  const normalized = typeof confidence === "string" ? confidence.toLowerCase() : "";
+  const { label, variant } = map[normalized] || { label: "Unknown Confidence", variant: "default" };
+  return <Badge variant={variant as any}>{label}</Badge>;
 }
 
 // ---------------------------------------------------------------------------

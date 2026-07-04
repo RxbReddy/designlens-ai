@@ -168,9 +168,19 @@ export async function streamAnalysis(
 
       if (stateDelta) {
         const outputKey = `${author.replace("_agent", "_output")}` as string;
-        const rawOutput = stateDelta[outputKey];
+        let rawOutput = stateDelta[outputKey];
 
         if (rawOutput !== undefined) {
+          if (typeof rawOutput === "string" && agentId !== "report_agent") {
+            try {
+              const match = rawOutput.match(/```(?:json)?\\s*([\\s\\S]*?)\\s*```/);
+              const jsonStr = match ? match[1] : rawOutput;
+              rawOutput = JSON.parse(jsonStr);
+            } catch (e) {
+              console.warn("Failed to parse JSON for", agentId, e);
+            }
+          }
+
           onEvent({ type: "agent_complete", agentId, output: rawOutput });
 
           // Accumulate into result

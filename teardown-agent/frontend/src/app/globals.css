@@ -20,9 +20,9 @@
 
     /* Text channel values */
     --text-primary: 242 242 242;
-    --text-secondary: 160 160 160;
-    --text-tertiary: 100 100 100;
-    --text-muted: 68 68 68;
+    --text-secondary: 165 165 165;
+    --text-tertiary: 125 125 125;
+    --text-muted: 100 100 100;
 
     /* Accent — electric indigo */
     --accent-primary: 99 102 241;
