@@ -22,8 +22,13 @@ from google.adk.models import Gemini
 from google.genai import types
 
 import os
+import sys
 import google.auth
 from google.auth.exceptions import DefaultCredentialsError
+
+from google.adk.tools.mcp_tool import McpToolset
+from google.adk.tools.mcp_tool.mcp_session_manager import StdioConnectionParams
+from mcp import StdioServerParameters
 
 # Graceful authentication handling (Vertex AI vs Google AI Studio API Key)
 try:
@@ -44,29 +49,19 @@ except DefaultCredentialsError:
 def get_model():
     return Gemini(
         model="gemini-flash-latest",
-        retry_options=types.HttpRetryOptions(attempts=3),
+        retry_options=types.HttpRetryOptions(
+            attempts=5,
+            initial_delay=10.0,
+            max_delay=60.0,
+            exp_base=2.0,
+            http_status_codes=[429, 503],
+        ),
     )
 
 
-def get_material_cost(material_name: str) -> dict:
-    """Mock tool to look up current manufacturing costs for a material.
-
-    Args:
-        material_name: The name of the material to query (e.g. 'ABS', 'aluminum', 'copper').
-
-    Returns:
-        A dict with cost information.
-    """
-    costs = {
-        "abs": {"price_per_kg": "$3.50", "complexity_premium": "low"},
-        "aluminum": {"price_per_kg": "$6.20", "complexity_premium": "medium"},
-        "steel": {"price_per_kg": "$2.10", "complexity_premium": "low"},
-        "copper": {"price_per_kg": "$9.80", "complexity_premium": "high"},
-        "silicon": {"price_per_kg": "$25.00", "complexity_premium": "high"},
-        "fr4": {"price_per_kg": "$12.00", "complexity_premium": "medium"}
-    }
-    mat = material_name.lower().strip()
-    return costs.get(mat, {"price_per_kg": "Unknown / Custom", "complexity_premium": "high"})
+# MCP Server parameters for the Cost Agent tool
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+MCP_SERVER_PATH = os.path.join(CURRENT_DIR, "mcp_server.py")
 
 
 # Agent Factories to prevent parent assignment conflicts
@@ -552,6 +547,14 @@ Save your output into the session state key 'tradeoff_output'.""",
     )
 
 def create_cost_agent():
+    mcp_toolset = McpToolset(
+        connection_params=StdioConnectionParams(
+            server_params=StdioServerParameters(
+                command=sys.executable,
+                args=["-u", MCP_SERVER_PATH],
+            )
+        )
+    )
     return Agent(
         name="cost_agent",
         model=get_model(),
@@ -588,12 +591,14 @@ parts belong to propulsion_system, not power_system. power_system is only for vi
 energy storage/distribution components such as batteries, battery bays, charging contacts, BMS,
 power distribution, or power wiring.
 
-Normalize material names before calling get_material_cost:
+Normalize material names before calling get_materials_costs:
 - If a material is written as alternatives such as "ABS or polycarbonate", query each likely material
   separately if useful.
 - If a material is broad such as "molded plastic", query common broad candidates such as ABS and/or
   polycarbonate when appropriate.
 - Avoid exact alloy, resin, or composite grades unless they are visible, labeled, or user-provided.
+
+Compile a list of all normalized material names and query the 'get_materials_costs' batch tool exactly once with the list of materials to fetch current prices.
 
 Preserve confidence from vision_output.material_candidates. Separate visible evidence from inferred
 assumptions. Do not state hidden/internal components as facts unless they are visible or user-provided.
@@ -605,7 +610,7 @@ Return valid JSON with:
 - assumptions: inferred cost factors that are plausible but not directly visible
 - uncertainty_notes: cost-relevant unknowns from vision_output.uncertainties
 Save your output into the session state key 'cost_output'.""",
-        tools=[get_material_cost],
+        tools=[mcp_toolset],
         output_key="cost_output"
     )
 

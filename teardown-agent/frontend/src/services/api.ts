@@ -457,8 +457,8 @@ const MOCK_RESULT: AnalysisResult = {
 
   reportMarkdown: `# DesignLens AI — Engineering Teardown Report
 
-**Product:** Consumer Camera Quadcopter Drone  
-**Confidence:** High  
+**Product:** Consumer Camera Quadcopter Drone
+**Confidence:** High
 **Analysis Date:** ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
 
 ---
@@ -557,3 +557,12 @@ Hardware gimbal adds $20–$60 to BOM but delivers visually superior results. A 
 4. **Weight breakdown** — Enable more accurate BOM cost normalization per gram
 `,
 };
+
+export async function fetchImageFromURL(url: string): Promise<{ base64: string; mimeType: string }> {
+  const res = await fetch(`${API_BASE}/fetch-image?url=${encodeURIComponent(url)}`);
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ detail: "Failed to fetch image from URL" }));
+    throw new Error(errorData.detail || "Failed to fetch image from URL");
+  }
+  return res.json();
+}

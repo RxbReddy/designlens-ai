@@ -66,6 +66,37 @@ interface UseAgentRunnerReturn {
   reset: () => void;
 }
 
+const getCacheKey = (file: UploadedFile) => {
+  return `designlens_cache_${file.file.name}_${file.file.size}`;
+};
+
+const getCachedResult = (file: UploadedFile): AnalysisResult | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const data = localStorage.getItem(getCacheKey(file));
+    return data ? JSON.parse(data) : null;
+  } catch (e) {
+    return null;
+  }
+};
+
+const cacheResult = (file: UploadedFile, result: AnalysisResult) => {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(getCacheKey(file), JSON.stringify(result));
+  } catch (e) {
+    console.warn("Storage quota exceeded, clearing cache", e);
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith("designlens_cache_")) {
+        localStorage.removeItem(key);
+      }
+    });
+    try {
+      localStorage.setItem(getCacheKey(file), JSON.stringify(result));
+    } catch (_) {}
+  }
+};
+
 export function useAgentRunner(): UseAgentRunnerReturn {
   const [stages, setStages] = useState<AgentStage[]>(INITIAL_STAGES);
   const [runnerState, setRunnerState] = useState<RunnerState>("idle");
@@ -92,6 +123,15 @@ export function useAgentRunner(): UseAgentRunnerReturn {
 
   const startAnalysis = useCallback(
     async (file: UploadedFile) => {
+      // Check cache first
+      const cached = getCachedResult(file);
+      if (cached) {
+        setStages(INITIAL_STAGES.map((s) => ({ ...s, status: "complete" as const })));
+        setResult(cached);
+        setRunnerState("complete");
+        return;
+      }
+
       // Reset state
       setStages(INITIAL_STAGES);
       setResult(null);
@@ -110,6 +150,7 @@ export function useAgentRunner(): UseAgentRunnerReturn {
 
           case "done":
             setResult(event.result);
+            cacheResult(file, event.result);
             setRunnerState("complete");
             break;
 

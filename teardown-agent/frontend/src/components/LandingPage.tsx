@@ -2,8 +2,9 @@
 
 import React, { useCallback, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, Zap, Eye, Cpu, BarChart2, FileText, ChevronRight, Image as ImageIcon } from "lucide-react";
+import { Upload, Zap, Eye, Cpu, BarChart2, FileText, ChevronRight, Image as ImageIcon, Link as LinkIcon } from "lucide-react";
 import type { UploadedFile } from "@/types/agent";
+import { fetchImageFromURL } from "@/services/api";
 
 interface LandingPageProps {
   onFileReady: (file: UploadedFile) => void;
@@ -46,7 +47,47 @@ const PIPELINE_STEPS = [
 export default function LandingPage({ onFileReady }: LandingPageProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleUrlSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    let targetUrl = imageUrl.trim();
+    if (!targetUrl) return;
+
+    // Normalize URL if protocol is missing
+    if (!/^https?:\/\//i.test(targetUrl)) {
+      targetUrl = "https://" + targetUrl;
+    }
+
+    setIsLoading(true);
+    try {
+      const data = await fetchImageFromURL(targetUrl);
+
+      // Decode base64 to Blob synchronously to avoid browser CSP block on fetch('data:...')
+      const byteCharacters = atob(data.base64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: data.mimeType });
+
+      const ext = data.mimeType.split("/")[1] || "png";
+      const file = new File([blob], `downloaded-image.${ext}`, { type: data.mimeType });
+
+      onFileReady({
+        file,
+        previewUrl: `data:${data.mimeType};base64,${data.base64}`,
+        base64: data.base64,
+        mimeType: data.mimeType
+      });
+    } catch (err: any) {
+      alert(err.message || "Failed to load image from URL.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleFile = useCallback(
     async (file: File) => {
@@ -207,6 +248,30 @@ export default function LandingPage({ onFileReady }: LandingPageProps) {
             </AnimatePresence>
           </div>
         </div>
+
+        {/* URL Input Form */}
+        <form onSubmit={handleUrlSubmit} className="mt-4 flex gap-2">
+          <div className="relative flex-1">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <LinkIcon size={14} className="text-[rgb(var(--text-tertiary))]" />
+            </div>
+            <input
+              type="text"
+              placeholder="Or paste an image URL..."
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              disabled={isLoading}
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[var(--border-default)] bg-[rgb(var(--bg-surface))] text-xs text-[rgb(var(--text-primary))] placeholder-[rgb(var(--text-muted))] focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-colors disabled:opacity-50"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isLoading || !imageUrl.trim()}
+            className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-600/40 text-white text-xs font-medium transition-colors disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0 cursor-pointer"
+          >
+            Fetch
+          </button>
+        </form>
 
         {/* Sample image shortcut */}
         <div className="flex justify-center mt-4">

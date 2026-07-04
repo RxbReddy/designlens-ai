@@ -41,6 +41,43 @@
     --radius-xl: 20px;
   }
 
+  :root.light-theme {
+    /* Neutral scale — clean light (channel values for rgb()) */
+    --bg-base: 250 250 250;
+    --bg-surface: 240 240 240;
+    --bg-elevated: 255 255 255;
+    --bg-overlay: 228 228 228;
+
+    /* Border */
+    --border-subtle:  rgba(0, 0, 0, 0.05);
+    --border-default: rgba(0, 0, 0, 0.12);
+    --border-strong:  rgba(0, 0, 0, 0.22);
+
+    /* Text */
+    --text-primary: 15 15 15;
+    --text-secondary: 90 90 90;
+    --text-tertiary: 120 120 120;
+    --text-muted: 150 150 150;
+
+    /* Accent */
+    --accent-primary: 79 70 229; /* indigo-600 */
+    --accent-hover: 67 56 202;   /* indigo-700 */
+  }
+
+  /* View Transition API overrides for circular spread */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+  }
+  /* When transitioning to dark mode, keep dark on top */
+  ::view-transition-old(root) {
+    z-index: 1;
+  }
+  ::view-transition-new(root) {
+    z-index: 2;
+  }
+
   * {
     box-sizing: border-box;
     margin: 0;

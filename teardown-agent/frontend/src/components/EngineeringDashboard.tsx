@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import {
   Eye, Cpu, TrendingUp, BarChart2, FileText, Package,
   Layers, AlertTriangle, ArrowRight, ChevronDown, ChevronUp,
-  Download
+  Download, Home
 } from "lucide-react";
 import type { AnalysisResult, SubsystemKey, UploadedFile } from "@/types/agent";
 import { Badge, Card, ConfidencePill, SectionHeader, Divider, EmptyState } from "@/components/ui/Primitives";
@@ -342,16 +342,24 @@ export default function EngineeringDashboard({
   return (
     <div className="min-h-screen bg-[rgb(var(--bg-base))]">
       {/* Top nav */}
-      <header className="sticky top-0 z-20 border-b border-white/6 bg-[rgba(10,10,10,0.9)] backdrop-blur-md">
+      <header className="sticky top-0 z-20 border-b border-[var(--border-subtle)] bg-[rgb(var(--bg-base)/0.9)] backdrop-blur-md">
         <div className="mx-auto max-w-4xl px-4 h-12 flex items-center justify-between">
           <span className="text-sm font-semibold text-[rgb(var(--text-primary))] tracking-tight">
             DesignLens <span className="text-indigo-400">AI</span>
           </span>
           <div className="flex items-center gap-2">
             <button
+              id="home-btn"
+              onClick={onReset}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgb(var(--bg-surface))] hover:bg-[rgb(var(--bg-overlay))] text-[rgb(var(--text-secondary))] text-xs font-medium transition-colors border border-[var(--border-default)] cursor-pointer"
+            >
+              <Home size={11} />
+              Home
+            </button>
+            <button
               id="view-report-btn"
               onClick={onViewReport}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition-colors cursor-pointer"
             >
               <FileText size={11} />
               View Report
@@ -359,7 +367,7 @@ export default function EngineeringDashboard({
             <button
               id="new-analysis-btn"
               onClick={onReset}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/8 text-[rgb(var(--text-secondary))] text-xs font-medium transition-colors border border-white/8"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgb(var(--bg-surface))] hover:bg-[rgb(var(--bg-overlay))] text-[rgb(var(--text-secondary))] text-xs font-medium transition-colors border border-[var(--border-default)] cursor-pointer"
             >
               New Analysis
             </button>
