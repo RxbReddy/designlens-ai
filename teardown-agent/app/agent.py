@@ -627,6 +627,7 @@ Save your output into the session state key 'cost_output'.""",
                     server_params=StdioServerParameters(
                         command=sys.executable,
                         args=[MCP_SERVER_PATH],
+                        env=dict(os.environ),
                     )
                 )
             )

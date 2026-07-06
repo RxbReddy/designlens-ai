@@ -1,0 +1,17 @@
+# Ignore non-backend folders for Cloud Run deployment
+.gcloudignore
+.git
+.gitignore
+
+# Frontend
+frontend/
+
+# Local python env and cache
+.venv/
+__pycache__/
+*.pyc
+
+# Tests and deployment
+tests/
+deployment/
+artifacts/
