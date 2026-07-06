@@ -584,3 +584,25 @@ export async function fetchImageFromURL(url: string): Promise<{ base64: string; 
   }
   return res.json();
 }
+
+export interface McpQueryState {
+  engine: string;
+  status: "searching" | "complete" | "fallback";
+}
+
+export interface McpStatus {
+  status: "idle" | "running";
+  queries: Record<string, McpQueryState>;
+  timestamp: number;
+}
+
+export async function fetchMcpStatus(): Promise<McpStatus> {
+  try {
+    const res = await fetch(`${API_BASE}/api/mcp_status`);
+    if (!res.ok) throw new Error("Failed to fetch MCP status");
+    return await res.json();
+  } catch (err) {
+    console.error("Error fetching MCP status:", err);
+    return { status: "idle", queries: {}, timestamp: 0 };
+  }
+}

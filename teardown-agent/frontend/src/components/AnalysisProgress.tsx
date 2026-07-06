@@ -4,9 +4,11 @@ import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, Cpu, TrendingUp, BarChart2, FileText, Check, Loader2, Clock } from "lucide-react";
 import type { AgentId, AgentStage, AgentStatus } from "@/types/agent";
+import type { McpStatus } from "@/services/api";
 
 interface AnalysisProgressProps {
   stages: AgentStage[];
+  mcpStatus: McpStatus | null;
   imagePreviewUrl: string;
 }
 
@@ -50,7 +52,7 @@ const STATUS_CONFIG: Record<AgentStatus, {
   },
 };
 
-function StageRow({ stage }: { stage: AgentStage }) {
+function StageRow({ stage, mcpStatus }: { stage: AgentStage; mcpStatus?: McpStatus | null }) {
   const Icon = AGENT_ICONS[stage.id];
   const cfg = STATUS_CONFIG[stage.status];
 
@@ -60,11 +62,11 @@ function StageRow({ stage }: { stage: AgentStage }) {
       initial={{ opacity: 0, x: -12 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className={`flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 ${cfg.bgColor} ${cfg.borderColor}`}
+      className={`flex items-start gap-4 p-4 rounded-xl border transition-all duration-300 ${cfg.bgColor} ${cfg.borderColor}`}
     >
       {/* Icon bubble */}
       <div
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${cfg.borderColor} ${cfg.bgColor}`}
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border mt-0.5 ${cfg.borderColor} ${cfg.bgColor}`}
       >
         <Icon size={15} className={cfg.color} />
       </div>
@@ -77,10 +79,50 @@ function StageRow({ stage }: { stage: AgentStage }) {
         <p className="text-xs text-[rgb(var(--text-tertiary))] mt-0.5 leading-snug">
           {stage.description}
         </p>
+
+        {/* Real-time Subprocesses for Cost Agent */}
+        {stage.id === "cost_agent" && stage.status === "running" && mcpStatus && mcpStatus.queries && Object.keys(mcpStatus.queries).length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            className="mt-3.5 space-y-2 border-t border-white/6 pt-3"
+          >
+            <p className="text-[10px] uppercase tracking-wider text-[rgb(var(--text-tertiary))] font-semibold">
+              Live Supply Chain Search
+            </p>
+            <div className="grid grid-cols-1 gap-1.5">
+              {Object.entries(mcpStatus.queries).map(([query, state]) => {
+                let badgeColor = "bg-indigo-500/10 text-indigo-300 border-indigo-500/20";
+                let statusLabel = state.engine;
+                let isSearching = state.status === "searching";
+
+                if (state.status === "complete") {
+                  badgeColor = "bg-emerald-500/10 text-emerald-300 border-emerald-500/20";
+                } else if (state.status === "fallback") {
+                  badgeColor = "bg-blue-500/10 text-blue-300 border-blue-500/20";
+                } else if (state.engine.includes("DuckDuckGo")) {
+                  badgeColor = "bg-amber-500/10 text-amber-300 border-amber-500/20";
+                }
+
+                return (
+                  <div key={query} className="flex items-center justify-between text-xs bg-white/3 rounded-lg px-2.5 py-1.5 border border-white/5">
+                    <span className="truncate max-w-[200px] text-[rgb(var(--text-secondary))] font-medium">
+                      {query}
+                    </span>
+                    <span className={`flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full border ${badgeColor}`}>
+                      {isSearching && <Loader2 size={10} className="animate-spin" />}
+                      {statusLabel}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {/* Status indicator */}
-      <div className="shrink-0">
+      <div className="shrink-0 mt-1">
         <AnimatePresence mode="wait">
           {stage.status === "running" && (
             <motion.div
@@ -127,7 +169,7 @@ function StageRow({ stage }: { stage: AgentStage }) {
   );
 }
 
-export default function AnalysisProgress({ stages, imagePreviewUrl }: AnalysisProgressProps) {
+export default function AnalysisProgress({ stages, mcpStatus, imagePreviewUrl }: AnalysisProgressProps) {
   const completeCount = stages.filter((s) => s.status === "complete").length;
   const progress = (completeCount / stages.length) * 100;
 
@@ -200,7 +242,7 @@ export default function AnalysisProgress({ stages, imagePreviewUrl }: AnalysisPr
         {/* Stage list */}
         <div className="space-y-2">
           {stages.map((stage) => (
-            <StageRow key={stage.id} stage={stage} />
+            <StageRow key={stage.id} stage={stage} mcpStatus={mcpStatus} />
           ))}
         </div>
 

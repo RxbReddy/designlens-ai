@@ -8,8 +8,9 @@
 
 "use client";
 
-import { useCallback, useState } from "react";
-import { streamAnalysis } from "@/services/api";
+import { useCallback, useState, useEffect } from "react";
+import { streamAnalysis, fetchMcpStatus } from "@/services/api";
+import type { McpStatus } from "@/services/api";
 import type { AgentId, AgentStage, AgentStatus, AnalysisResult, UploadedFile } from "@/types/agent";
 
 // ---------------------------------------------------------------------------
@@ -62,6 +63,7 @@ interface UseAgentRunnerReturn {
   runnerState: RunnerState;
   result: AnalysisResult | null;
   errorMessage: string | null;
+  mcpStatus: McpStatus | null;
   startAnalysis: (file: UploadedFile) => Promise<void>;
   reset: () => void;
 }
@@ -102,6 +104,30 @@ export function useAgentRunner(): UseAgentRunnerReturn {
   const [runnerState, setRunnerState] = useState<RunnerState>("idle");
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [mcpStatus, setMcpStatus] = useState<McpStatus | null>(null);
+
+  const isCostAgentRunning = stages.find((s) => s.id === "cost_agent")?.status === "running";
+
+  useEffect(() => {
+    if (!isCostAgentRunning) {
+      setMcpStatus(null);
+      return;
+    }
+
+    setMcpStatus({ status: "running", queries: {}, timestamp: Date.now() });
+
+    const interval = setInterval(async () => {
+      const status = await fetchMcpStatus();
+      setMcpStatus((prev) => {
+        if (!isCostAgentRunning) return null;
+        return status;
+      });
+    }, 500);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [isCostAgentRunning]);
 
   const setAgentStatus = useCallback(
     (agentId: AgentId, status: AgentStatus) => {
@@ -175,7 +201,8 @@ export function useAgentRunner(): UseAgentRunnerReturn {
     setRunnerState("idle");
     setResult(null);
     setErrorMessage(null);
+    setMcpStatus(null);
   }, []);
 
-  return { stages, runnerState, result, errorMessage, startAnalysis, reset };
+  return { stages, runnerState, result, errorMessage, mcpStatus, startAnalysis, reset };
 }

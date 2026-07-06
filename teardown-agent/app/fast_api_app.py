@@ -99,6 +99,21 @@ app.add_middleware(
 )
 
 
+@app.get("/api/mcp_status")
+@app.get("/mcp_status")
+def get_mcp_status() -> dict:
+    """Get the current live status of MCP parts search queries."""
+    import json
+    status_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".adk", "mcp_status.json")
+    if os.path.exists(status_path):
+        try:
+            with open(status_path, "r") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {"status": "idle", "queries": {}}
+
+
 @app.post("/feedback")
 def collect_feedback(feedback: Feedback) -> dict[str, str]:
     """Collect and log feedback.

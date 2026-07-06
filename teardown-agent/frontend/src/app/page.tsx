@@ -22,7 +22,7 @@ export default function Home() {
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
   const [showReport, setShowReport] = useState(false);
 
-  const { stages, runnerState, result, errorMessage, startAnalysis, reset } =
+  const { stages, runnerState, result, errorMessage, mcpStatus, startAnalysis, reset } =
     useAgentRunner();
 
   // ── Handlers ──────────────────────────────────────────────
@@ -78,6 +78,7 @@ export default function Home() {
         <motion.div key="analyzing" variants={fadeVariants} initial="hidden" animate="visible" exit="exit">
           <AnalysisProgress
             stages={stages}
+            mcpStatus={mcpStatus}
             imagePreviewUrl={uploadedFile.previewUrl}
           />
         </motion.div>

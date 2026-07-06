@@ -320,9 +320,24 @@ function CostCard({ result }: { result: AnalysisResult }) {
             <div>
               <p className="text-[10px] text-amber-400 font-medium mb-1">Assumptions</p>
               <ul className="space-y-0.5">
-                {result.costOutput.assumptions.map((a, i) => (
-                  <li key={i} className="text-[10px] text-[rgb(var(--text-muted))]">{a}</li>
-                ))}
+                {result.costOutput.assumptions.map((a, i) => {
+                  if (typeof a === "object" && a !== null) {
+                    const obj = a as any;
+                    const name = obj.component || obj.component_name || obj.name || "Unknown component";
+                    const range = obj.estimated_cost_range ? ` (${obj.estimated_cost_range})` : "";
+                    const reason = obj.reasoning ? `: ${obj.reasoning}` : "";
+                    return (
+                      <li key={i} className="text-[10px] text-[rgb(var(--text-muted))]">
+                        <strong>{name}</strong>{range}{reason}
+                      </li>
+                    );
+                  }
+                  return (
+                    <li key={i} className="text-[10px] text-[rgb(var(--text-muted))]">
+                      {String(a)}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           </div>
