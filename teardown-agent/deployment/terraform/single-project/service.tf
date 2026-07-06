@@ -27,7 +27,7 @@ resource "google_vertex_ai_reasoning_engine" "app" {
     service_account = google_service_account.app_sa.email
 
     deployment_spec {
-      min_instances         = 1
+      min_instances         = 0
       max_instances         = 10
       container_concurrency = 9
 
